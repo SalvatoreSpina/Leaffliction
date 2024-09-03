@@ -7,12 +7,14 @@ mkdir -p ./local_lib/python3.8/site-packages
 export PYTHONPATH=$(pwd)/local_lib/python3.8/site-packages:$PYTHONPATH
 
 # Step 3: Install required Python packages to the local library directory
-pip install --target=$(pwd)/local_lib/python3.8/site-packages torch torchvision pandas matplotlib pillow
+pip install --target=$(pwd)/local_lib/python3.8/site-packages torch torchvision pandas matplotlib pillow flake8
 
 # Step 4: Add the local library directory to the PYTHONPATH permanently
 echo 'export PYTHONPATH=$(pwd)/local_lib/python3.8/site-packages:$PYTHONPATH' >> ~/.zshrc
 
 # Step 5: Reload the shell configuration
 source ~/.zshrc
+
+alias norminette_python=flake8
 
 echo "Setup complete. The environment has been configured to use locally installed Python packages."
