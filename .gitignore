@@ -151,3 +151,10 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 /local_lib
+/Part_2/dataset
+/Part_3/dataset
+/Part_2/test_images
+Part_2/leaves.zip
+*.zip
+/Part_3/test_images
+/Part_3/transformed_images
