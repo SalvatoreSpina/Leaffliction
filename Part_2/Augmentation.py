@@ -11,213 +11,212 @@ from torchvision.io import read_image, write_jpeg
 import torchvision.transforms.functional as F
 
 class ImageAugmentor:
-    def __init__(self, directory, augmentation_dir="augmented_directory", validation_dir="validation"):
-        self.directory = directory
-        self.augmentation_dir = augmentation_dir
-        self.validation_dir = validation_dir
+    def __init__(self, source_directory, augmented_output_directory="augmented_directory", validation_output_directory="validation"):
+        self.source_directory = source_directory
+        self.augmented_output_directory = augmented_output_directory
+        self.validation_output_directory = validation_output_directory
         self.transformation_functions = [
-            self.flip, self.rotate, self.blur, self.adjust_contrast,
-            self.adjust_brightness, self.perspective, self.scale
+            self.apply_flip, self.apply_rotation, self.apply_blur, 
+            self.adjust_contrast, self.adjust_brightness, 
+            self.apply_perspective_transform, self.apply_scaling
         ]
-        self.num_of_aug = len(self.transformation_functions)
+        self.number_of_transformations = len(self.transformation_functions)
 
-    def flip(self, image, path=None):
-        transformed_image = t.RandomHorizontalFlip(1)(image)
-        if path:
-            write_jpeg(transformed_image, f"{path}_Flip.jpg")
-        return transformed_image
+    def apply_flip(self, image, save_path=None):
+        flipped_image = t.RandomHorizontalFlip(1)(image)
+        if save_path:
+            write_jpeg(flipped_image, f"{save_path}_Flip.jpg")
+        return flipped_image
 
-    def rotate(self, image, path=None):
-        transformed_image = t.functional.rotate(image, 30, interpolation=Image.Resampling.BILINEAR)
-        if path:
-            write_jpeg(transformed_image, f"{path}_Rotation.jpg")
-        return transformed_image
+    def apply_rotation(self, image, save_path=None):
+        rotated_image = t.functional.rotate(image, 30, interpolation=Image.Resampling.BILINEAR)
+        if save_path:
+            write_jpeg(rotated_image, f"{save_path}_Rotation.jpg")
+        return rotated_image
 
-    def blur(self, image, path=None):
-        transformed_image = t.GaussianBlur(9)(image)
-        if path:
-            write_jpeg(transformed_image, f"{path}_Blur.jpg")
-        return transformed_image
+    def apply_blur(self, image, save_path=None):
+        blurred_image = t.GaussianBlur(9)(image)
+        if save_path:
+            write_jpeg(blurred_image, f"{save_path}_Blur.jpg")
+        return blurred_image
 
-    def adjust_contrast(self, image, path=None):
-        transformed_image = t.functional.adjust_contrast(image, 1.5)
-        if path:
-            write_jpeg(transformed_image, f"{path}_Contrast.jpg")
-        return transformed_image
+    def adjust_contrast(self, image, save_path=None):
+        contrast_adjusted_image = t.functional.adjust_contrast(image, 1.5)
+        if save_path:
+            write_jpeg(contrast_adjusted_image, f"{save_path}_Contrast.jpg")
+        return contrast_adjusted_image
 
-    def adjust_brightness(self, image, path=None):
-        transformed_image = t.ColorJitter((1.8, 2))(image)
-        if path:
-            write_jpeg(transformed_image, f"{path}_Brightness.jpg")
-        return transformed_image
+    def adjust_brightness(self, image, save_path=None):
+        brightness_adjusted_image = t.ColorJitter((1.8, 2))(image)
+        if save_path:
+            write_jpeg(brightness_adjusted_image, f"{save_path}_Brightness.jpg")
+        return brightness_adjusted_image
 
-    def perspective(self, image, path=None):
-        transformed_image = t.RandomPerspective(0.5, p=1)(image)
-        if path:
-            write_jpeg(transformed_image, f"{path}_Distortion.jpg")
-        return transformed_image
+    def apply_perspective_transform(self, image, save_path=None):
+        perspective_transformed_image = t.RandomPerspective(0.5, p=1)(image)
+        if save_path:
+            write_jpeg(perspective_transformed_image, f"{save_path}_Distortion.jpg")
+        return perspective_transformed_image
 
-    def scale(self, image, path=None):
-        transformed_image = t.RandomAffine(degrees=0, scale=(1.3, 1.7))(image)
-        if path:
-            write_jpeg(transformed_image, f"{path}_Scaling.jpg")
-        return transformed_image
+    def apply_scaling(self, image, save_path=None):
+        scaled_image = t.RandomAffine(degrees=0, scale=(1.3, 1.7))(image)
+        if save_path:
+            write_jpeg(scaled_image, f"{save_path}_Scaling.jpg")
+        return scaled_image
 
-    def augment_images(self, max_augmentations, plant, class_name, image_list):
+    def augment_images_in_class(self, max_augmentations, plant_name, disease_class, image_paths):
         """
         Augments images in the specified class directory.
         """
-        class_path = os.path.join(self.augmentation_dir, plant, class_name)
-        os.makedirs(class_path, exist_ok=True)
+        class_output_path = os.path.join(self.augmented_output_directory, plant_name, disease_class)
+        os.makedirs(class_output_path, exist_ok=True)
 
-        for image_path in image_list:
-            copy(image_path, class_path)
-            for transform in self.transformation_functions:
+        for image_path in image_paths:
+            copy(image_path, class_output_path)
+            for transformation in self.transformation_functions:
                 if max_augmentations == 0:
                     break
-                save_path = os.path.join(class_path, os.path.splitext(os.path.basename(image_path))[0])
-                transform(read_image(image_path), save_path)
+                save_path = os.path.join(class_output_path, os.path.splitext(os.path.basename(image_path))[0])
+                transformation(read_image(image_path), save_path)
                 max_augmentations -= 1
 
         if max_augmentations > 0:
             print("Balancing was not fully achieved.")
 
-    def walk_through_dir(self):
+    def gather_image_paths(self):
         """
         Walks through the directory and gathers all image paths.
         """
-        image_list = []
-        for plant in os.listdir(self.directory):
-            plant_path = os.path.join(self.directory, plant)
-            for disease in os.listdir(plant_path):
-                disease_path = os.path.join(plant_path, disease)
-                for file in os.listdir(disease_path):
-                    file_path = os.path.join(disease_path, file)
-                    if os.path.isfile(file_path):
-                        image_list.append(file_path)
-        return image_list
+        image_paths = []
+        for plant_name in os.listdir(self.source_directory):
+            plant_directory_path = os.path.join(self.source_directory, plant_name)
+            for disease_class in os.listdir(plant_directory_path):
+                disease_directory_path = os.path.join(plant_directory_path, disease_class)
+                for image_file in os.listdir(disease_directory_path):
+                    image_file_path = os.path.join(disease_directory_path, image_file)
+                    if os.path.isfile(image_file_path):
+                        image_paths.append(image_file_path)
+        return image_paths
 
-    def create_dataframe(self, image_list):
+    def create_image_dataframe(self, image_paths):
         """
         Creates a DataFrame to manage images by plant and disease.
         """
-        df = pd.DataFrame(image_list, columns=['filename'])
-        df['plant'] = df['filename'].apply(lambda x: x.split(os.sep)[-3])
-        df['disease'] = df['filename'].apply(lambda x: x.split(os.sep)[-2])
-        return df
+        image_dataframe = pd.DataFrame(image_paths, columns=['image_file_path'])
+        image_dataframe['plant_name'] = image_dataframe['image_file_path'].apply(lambda x: x.split(os.sep)[-3])
+        image_dataframe['disease_class'] = image_dataframe['image_file_path'].apply(lambda x: x.split(os.sep)[-2])
+        return image_dataframe
 
-    def stratified_sample_df(self, df, col, n_samples):
+    def stratified_sample_dataframe(self, dataframe, column_name, sample_size):
         """
         Creates a stratified sample DataFrame.
         """
-        min_samples = min(n_samples, df[col].value_counts().min())
-        sampled_df = df.groupby(col).apply(lambda x: x.sample(min_samples))
-        sampled_df.index = sampled_df.index.droplevel(0)
-        return sampled_df
+        min_sample_size = min(sample_size, dataframe[column_name].value_counts().min())
+        stratified_sample = dataframe.groupby(column_name).apply(lambda x: x.sample(min_sample_size))
+        stratified_sample.index = stratified_sample.index.droplevel(0)
+        return stratified_sample
 
     def balance_and_split_dataset(self):
         """
         Splits data into training and validation sets and applies augmentations.
         """
-        image_list = self.walk_through_dir()
-        dataframe = self.create_dataframe(image_list)
+        image_paths = self.gather_image_paths()
+        image_dataframe = self.create_image_dataframe(image_paths)
 
-        for plant, frame in dataframe.groupby('plant'):
-            aug_counter = {}
-            df_test = self.stratified_sample_df(frame, 'disease', 25)
-            df_train = frame.drop(df_test.index)
+        for plant_name, group_dataframe in image_dataframe.groupby('plant_name'):
+            augmentation_count = {}
+            validation_dataframe = self.stratified_sample_dataframe(group_dataframe, 'disease_class', 25)
+            training_dataframe = group_dataframe.drop(validation_dataframe.index)
 
-            max_aug_per_class = df_train['disease'].value_counts().min() * self.num_of_aug
+            max_augmentations_per_class = training_dataframe['disease_class'].value_counts().min() * self.number_of_transformations
 
-            for disease_class in df_train['disease'].value_counts().index:
-                aug_for_class = max_aug_per_class - df_train['disease'].value_counts().loc[disease_class]
-                aug_counter[disease_class] = aug_for_class
+            for disease_class in training_dataframe['disease_class'].value_counts().index:
+                augmentations_needed = max_augmentations_per_class - training_dataframe['disease_class'].value_counts().loc[disease_class]
+                augmentation_count[disease_class] = augmentations_needed
 
-            for img_path, disease_class in zip(df_train['filename'], df_train['disease']):
-                train_path = os.path.join(self.augmentation_dir, plant, 'train', disease_class)
-                os.makedirs(train_path, exist_ok=True)
-                for transform in self.transformation_functions:
-                    if aug_counter[disease_class] > 0:
-                        save_path = os.path.join(train_path, os.path.splitext(os.path.basename(img_path))[0])
-                        transform(read_image(img_path), save_path)
-                        aug_counter[disease_class] -= 1
-                copy(img_path, train_path)
+            for image_path, disease_class in zip(training_dataframe['image_file_path'], training_dataframe['disease_class']):
+                training_output_path = os.path.join(self.augmented_output_directory, plant_name, 'train', disease_class)
+                os.makedirs(training_output_path, exist_ok=True)
+                for transformation in self.transformation_functions:
+                    if augmentation_count[disease_class] > 0:
+                        save_path = os.path.join(training_output_path, os.path.splitext(os.path.basename(image_path))[0])
+                        transformation(read_image(image_path), save_path)
+                        augmentation_count[disease_class] -= 1
+                copy(image_path, training_output_path)
 
-            for img_path, disease_class in zip(df_test['filename'], df_test['disease']):
-                val_path = os.path.join(self.validation_dir, plant, disease_class)
-                os.makedirs(val_path, exist_ok=True)
-                copy(img_path, val_path)
+            for image_path, disease_class in zip(validation_dataframe['image_file_path'], validation_dataframe['disease_class']):
+                validation_output_path = os.path.join(self.validation_output_directory, plant_name, disease_class)
+                os.makedirs(validation_output_path, exist_ok=True)
+                copy(image_path, validation_output_path)
 
     def create_balanced_dataset(self):
         """
         Creates a balanced dataset by augmenting the images.
         """
-        os.makedirs(self.augmentation_dir, exist_ok=True)
-        image_list = self.walk_through_dir()
-        dataframe = self.create_dataframe(image_list)
+        os.makedirs(self.augmented_output_directory, exist_ok=True)
+        image_paths = self.gather_image_paths()
+        image_dataframe = self.create_image_dataframe(image_paths)
 
-        for plant, frame in dataframe.groupby('plant'):
-            print(f"Class: {plant}")
-            min_class_count = frame['disease'].value_counts().min()
-            max_aug_per_class = min_class_count * self.num_of_aug
+        for plant_name, group_dataframe in image_dataframe.groupby('plant_name'):
+            print(f"Class: {plant_name}")
+            min_class_count = group_dataframe['disease_class'].value_counts().min()
+            max_augmentations_per_class = min_class_count * self.number_of_transformations
 
-            for disease_class in frame['disease'].value_counts().index:
-                aug_for_class = max_aug_per_class - frame['disease'].value_counts().loc[disease_class]
-                print(f"{disease_class}: {aug_for_class} augmentations needed.")
-                self.augment_images(
-                    aug_for_class, plant, disease_class,
-                    dataframe[(dataframe['disease'] == disease_class) & (dataframe['plant'] == plant)]['filename']
+            for disease_class in group_dataframe['disease_class'].value_counts().index:
+                augmentations_needed = max_augmentations_per_class - group_dataframe['disease_class'].value_counts().loc[disease_class]
+                print(f"{disease_class}: {augmentations_needed} augmentations needed.")
+                self.augment_images_in_class(
+                    augmentations_needed, plant_name, disease_class,
+                    image_dataframe[(image_dataframe['disease_class'] == disease_class) & (image_dataframe['plant_name'] == plant_name)]['image_file_path']
                 )
 
-    def show(self, imgs, labels):
+    def display_images_with_labels(self, images, labels):
         """
         Displays the images with labels.
         """
-        fig, axs = plt.subplots(ncols=len(imgs), squeeze=False)
-        for i, img in enumerate(imgs):
-            img = F.to_pil_image(img.detach())
+        fig, axs = plt.subplots(ncols=len(images), squeeze=False)
+        for i, image in enumerate(images):
+            image = F.to_pil_image(image.detach())
             axs[0, i].set_title(labels[i])
-            axs[0, i].imshow(np.asarray(img))
+            axs[0, i].imshow(np.asarray(image))
             axs[0, i].axis('off')
         plt.show()
 
-    def one_image(self, img_path):
+    def augment_single_image(self, image_path):
         """
         Applies augmentations to a single image and displays the original and augmented images.
         """
-        img = read_image(img_path)
-        augmented_images = [transform(img) for transform in self.transformation_functions]
-        labels = ['flip', 'rotate', 'blur', 'contrast', 'brightness', 'perspective', 'scaling']
+        image = read_image(image_path)
+        augmented_images = [transformation(image) for transformation in self.transformation_functions]
+        labels = ['Flip', 'Rotate', 'Blur', 'Contrast', 'Brightness', 'Perspective', 'Scaling']
         
         # Show original image along with augmented images
-        self.show([img] + augmented_images, labels=['original'] + labels)
+        self.display_images_with_labels([image] + augmented_images, labels=['Original'] + labels)
         
         # Save the augmented images
-        for i, image in enumerate(augmented_images):
-            write_jpeg(image, f"{os.path.splitext(img_path)[0]}_{labels[i]}.jpg")
-
+        for i, augmented_image in enumerate(augmented_images):
+            write_jpeg(augmented_image, f"{os.path.splitext(image_path)[0]}_{labels[i]}.jpg")
 
 def parse_arguments():
     parser = argparse.ArgumentParser(
-        prog='Augmentation',
-        description='Program that either applies augmentations to a single image or creates a balanced dataset from a directory.'
+        prog='ImageAugmentation',
+        description='Program that applies augmentations to a single image or creates a balanced dataset from a directory of images.'
     )
-    parser.add_argument('directory', metavar='directory', type=str, nargs=1,
+    parser.add_argument('source_directory', metavar='source_directory', type=str, nargs=1,
                         help='Directory containing images to augment.')
     return parser.parse_args()
-
 
 if __name__ == '__main__':
     plt.rcParams["figure.figsize"] = (10, 10)
     args = parse_arguments()
-    path = args.directory[0]
+    directory_path = args.source_directory[0]
 
-    if not os.path.exists(path):
+    if not os.path.exists(directory_path):
         sys.exit("The directory does not exist or is not accessible.")
     
-    augmentor = ImageAugmentor(directory=path)
+    augmentor = ImageAugmentor(source_directory=directory_path)
 
-    if os.path.isfile(path):
-        augmentor.one_image(path)
-    elif os.path.isdir(path):
+    if os.path.isfile(directory_path):
+        augmentor.augment_single_image(directory_path)
+    elif os.path.isdir(directory_path):
         augmentor.balance_and_split_dataset()
