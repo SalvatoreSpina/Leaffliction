@@ -3,7 +3,6 @@ import os
 from plantcv import plantcv as pcv
 import sys
 
-
 class ImageTransformer:
     def __init__(self, source_directory, destination_directory):
         """Initialize the ImageTransformer with source and destination directories."""
@@ -72,26 +71,50 @@ class ImageTransformer:
     def analyze_image(self, image):
         """Analyze the input image to identify and analyze objects."""
         masked_image = self.create_image_mask(image)
-        objects, object_hierarchy = pcv.find_objects(masked_image, masked_image)  # Using masked_image as mask
+        
+        # Convert to grayscale to ensure a single-channel image
+        gray_masked_image = pcv.rgb2gray(masked_image)
+        
+        # Apply binary threshold to create a binary mask (CV_8UC1)
+        binary_mask = pcv.threshold.binary(gray_img=gray_masked_image, threshold=128, max_value=255, object_type='light')
+
+        # Now use the binary mask in find_objects
+        objects, object_hierarchy = pcv.find_objects(binary_mask, binary_mask)  # Using binary mask for objects and hierarchy
         composed_object, object_mask = pcv.object_composition(
             img=masked_image, contours=objects, hierarchy=object_hierarchy
         )
+        
         return pcv.analyze_object(masked_image, composed_object, object_mask)
 
     def apply_pseudolandmarks(self, image):
         """Apply pseudolandmarks to the input image."""
         masked_image = self.create_image_mask(image)
-        objects, object_hierarchy = pcv.find_objects(masked_image, masked_image)  # Using masked_image as mask
+        gray_masked_image = pcv.rgb2gray(masked_image)
+        binary_mask = pcv.threshold.binary(gray_img=gray_masked_image, threshold=128, max_value=255, object_type='light')
+        objects, object_hierarchy = pcv.find_objects(binary_mask, binary_mask)
         composed_object, object_mask = pcv.object_composition(
             img=masked_image, contours=objects, hierarchy=object_hierarchy
         )
         pcv.y_axis_pseudolandmarks(img=masked_image, obj=composed_object, mask=object_mask, label="default")
+
         return masked_image
 
     def create_color_histogram(self, image):
         """Generate a color histogram for the input image."""
         masked_image = self.create_image_mask(image)
-        return pcv.analyze_color(rgb_img=image, mask=masked_image, colorspaces='all', label="default")
+        
+        # Convert the mask to grayscale if it's not already
+        gray_masked_image = pcv.rgb2gray(masked_image)
+        
+        # Apply binary threshold to get a proper binary mask (single-channel CV_8U)
+        binary_mask = pcv.threshold.binary(gray_img=gray_masked_image, threshold=128, max_value=255, object_type='light')
+        
+        # Ensure the mask and image are the same size
+        if binary_mask.shape[:2] != image.shape[:2]:
+            raise ValueError("Mask size does not match the image size")
+        
+        # Analyze color using the binary mask
+        return pcv.analyze_color(rgb_img=image, mask=binary_mask, colorspaces='all', label="default")
 
     def save_image(self, image, transformation_name, filename):
         """Save the transformed image to the destination directory."""
@@ -151,12 +174,12 @@ def parse_arguments():
     return {
         'destination_directory': args.dst,
         'source_directory': args.src,
-        'apply_blur': args.blur,
-        'apply_mask': args.mask,
-        'apply_roi': args.roi,
-        'apply_analysis': args.analysis,
-        'apply_landmarks': args.landmarks,
-        'apply_color_histogram': args.colors,
+        'blur': args.blur,
+        'mask': args.mask,
+        'roi': args.roi,
+        'analysis': args.analysis,
+        'landmarks': args.landmarks,
+        'colors': args.colors,
         'apply_all': args.all
     }
 
