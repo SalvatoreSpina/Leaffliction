@@ -2,6 +2,15 @@ import argparse
 import os
 from plantcv import plantcv as pcv
 import sys
+import fnmatch
+
+def find_file(pattern, path):
+    """Find a file matching the pattern in the given path."""
+    for root, dirs, files in os.walk(path):
+        for name in files:
+            if fnmatch.fnmatch(name, pattern):
+                return os.path.join(root, name)
+    return None
 
 class ImageTransformer:
     def __init__(self, source_directory, destination_directory):
@@ -20,101 +29,104 @@ class ImageTransformer:
 
     def apply_gaussian_blur(self, image):
         """Apply a Gaussian blur to the input image."""
-        hsv_s_channel = pcv.rgb2gray_hsv(rgb_img=image, channel='s')
-        binary_s_threshold = pcv.threshold.binary(gray_img=hsv_s_channel, threshold=40, max_value=255, object_type='light')
-        gaussian_blurred_image = pcv.gaussian_blur(img=binary_s_threshold, ksize=(5, 5), sigma_x=0, sigma_y=None)
+        saturation_channel = pcv.rgb2gray_hsv(rgb_img=image, channel='s')
+        binary_threshold = pcv.threshold.binary(gray_img=saturation_channel, threshold=40, max_value=255, object_type='light')
+        median_blurred_image = pcv.median_blur(gray_img=binary_threshold, ksize=5)
+        gaussian_blurred_image = pcv.gaussian_blur(img=binary_threshold, ksize=(5, 5), sigma_x=0, sigma_y=None)
         return gaussian_blurred_image
 
-    def create_image_mask(self, image):
-        """Create a mask for the input image based on HSV and LAB color spaces."""
-        hsv_s_channel = pcv.rgb2gray_hsv(rgb_img=image, channel='s')
-        binary_s_threshold = pcv.threshold.binary(gray_img=hsv_s_channel, threshold=40, max_value=255, object_type='dark')
-        median_blur_s = pcv.median_blur(gray_img=binary_s_threshold, ksize=5)
+    def create_image_mask(self, img):
+        """Create a mask for the input image."""
+        saturation_channel = pcv.rgb2gray_hsv(rgb_img=img, channel='s')
+        binary_threshold = pcv.threshold.binary(gray_img=saturation_channel, threshold=40, max_value=255, object_type='dark')
+        median_blurred_image = pcv.median_blur(gray_img=binary_threshold, ksize=5)
+        blue_channel = pcv.rgb2gray_lab(rgb_img=img, channel='b')
 
-        lab_b_channel = pcv.rgb2gray_lab(rgb_img=image, channel='b')
-        binary_b_threshold = pcv.threshold.binary(gray_img=lab_b_channel, threshold=120, max_value=255, object_type='dark')
+        blue_threshold = pcv.threshold.binary(gray_img=blue_channel, threshold=120, max_value=255, object_type='dark')
+        combined_binary = pcv.logical_or(bin_img1=median_blurred_image, bin_img2=blue_threshold)
+        mask = pcv.invert(combined_binary)
 
-        combined_mask = pcv.logical_or(bin_img1=median_blur_s, bin_img2=binary_b_threshold)
-        inverted_mask = pcv.invert(combined_mask)
+        masked_image = pcv.apply_mask(img=img, mask=mask, mask_color='white')
 
-        masked_image = pcv.apply_mask(img=image, mask=inverted_mask, mask_color='white')
-        return masked_image  # Returning only the masked image, not the mask itself
+        masked_a_channel = pcv.rgb2gray_lab(rgb_img=masked_image, channel='a')
+        masked_b_channel = pcv.rgb2gray_lab(rgb_img=masked_image, channel='b')
 
-    def apply_roi_and_find_objects(self, image):
-        """Apply region of interest (ROI) objects and return the transformed image."""
-        # Get the masked image from the create_image_mask method
-        masked_image = self.create_image_mask(image)
-        
-        # Convert the masked image to grayscale and then apply binary thresholding to get a binary mask
-        gray_image = pcv.rgb2gray(masked_image)
-        binary_mask = pcv.threshold.binary(gray_img=gray_image, threshold=128, max_value=255, object_type='light')
-        
-        # Now find objects using the binary mask
-        objects, object_hierarchy = pcv.find_objects(masked_image, binary_mask)
-        
-        # Define the region of interest (ROI) as a rectangle covering the full image
-        roi_contour, roi_hierarchy = pcv.roi.rectangle(masked_image, 0, 0, masked_image.shape[0], masked_image.shape[1])
+        masked_a_threshold = pcv.threshold.binary(gray_img=masked_a_channel, threshold=115, max_value=255, object_type='dark')
+        masked_a_threshold1 = pcv.threshold.binary(gray_img=masked_a_channel, threshold=135, max_value=255, object_type='light')
+        masked_b_threshold = pcv.threshold.binary(gray_img=masked_b_channel, threshold=128, max_value=255, object_type='light')
+        combined_ab1 = pcv.logical_or(bin_img1=masked_a_threshold, bin_img2=masked_b_threshold)
+        combined_ab = pcv.logical_or(bin_img1=masked_a_threshold1, bin_img2=combined_ab1)
+        filled_mask = pcv.fill(bin_img=combined_ab, size=200)
+        final_masked_image = pcv.apply_mask(img=masked_image, mask=filled_mask, mask_color='white')
+        return final_masked_image, filled_mask
 
-        # Apply the ROI to the objects
-        pcv.roi_objects(
-            img=masked_image, 
-            roi_contour=roi_contour, 
-            roi_hierarchy=roi_hierarchy, 
-            object_contour=objects, 
-            obj_hierarchy=object_hierarchy,
-            roi_type='partial'
-        )
-        
+    def apply_mask(self, image):
+        """Apply the created mask to the input image."""
+        masked_image, filled_mask = self.create_image_mask(image)
         return masked_image
 
+    def apply_roi_and_find_objects(self, img):
+        """Apply ROI and find objects in the input image."""
+        saturation_channel = pcv.rgb2gray_hsv(rgb_img=img, channel='s')
+        binary_threshold = pcv.threshold.binary(gray_img=saturation_channel, threshold=40, max_value=255, object_type='dark')
+        median_blurred_image = pcv.median_blur(gray_img=binary_threshold, ksize=5)
+        gaussian_blurred_image = pcv.gaussian_blur(img=binary_threshold, ksize=(5, 5), sigma_x=0, sigma_y=None)
+        blue_channel = pcv.rgb2gray_lab(rgb_img=img, channel='b')
 
-    def analyze_image(self, image):
-        """Analyze the input image to identify and analyze objects."""
-        masked_image = self.create_image_mask(image)
-        
-        # Convert to grayscale to ensure a single-channel image
-        gray_masked_image = pcv.rgb2gray(masked_image)
-        
-        # Apply binary threshold to create a binary mask (CV_8UC1)
-        binary_mask = pcv.threshold.binary(gray_img=gray_masked_image, threshold=128, max_value=255, object_type='light')
+        blue_threshold = pcv.threshold.binary(gray_img=blue_channel, threshold=120, max_value=255, object_type='dark')
+        combined_binary = pcv.logical_or(bin_img1=median_blurred_image, bin_img2=blue_threshold)
+        mask = pcv.invert(combined_binary)
 
-        # Now use the binary mask in find_objects
-        objects, object_hierarchy = pcv.find_objects(binary_mask, binary_mask)  # Using binary mask for objects and hierarchy
-        composed_object, object_mask = pcv.object_composition(
-            img=masked_image, contours=objects, hierarchy=object_hierarchy
-        )
-        
-        return pcv.analyze_object(masked_image, composed_object, object_mask)
+        masked_image = pcv.apply_mask(img=img, mask=mask, mask_color='white')
 
-    def apply_pseudolandmarks(self, image):
+        masked_a_channel = pcv.rgb2gray_lab(rgb_img=masked_image, channel='a')
+        masked_b_channel = pcv.rgb2gray_lab(rgb_img=masked_image, channel='b')
+
+        masked_a_threshold = pcv.threshold.binary(gray_img=masked_a_channel, threshold=115, max_value=255, object_type='dark')
+        masked_a_threshold1 = pcv.threshold.binary(gray_img=masked_a_channel, threshold=135, max_value=255, object_type='light')
+        masked_b_threshold = pcv.threshold.binary(gray_img=masked_b_channel, threshold=128, max_value=255, object_type='light')
+        combined_ab1 = pcv.logical_or(bin_img1=masked_a_threshold, bin_img2=masked_b_threshold)
+        combined_ab = pcv.logical_or(bin_img1=masked_a_threshold1, bin_img2=combined_ab1)
+        clean_mask = pcv.fill(bin_img=combined_ab, size=200)
+        pcv.params.debug_outdir = '.'
+        objects, object_hierarchy = pcv.find_objects(img, clean_mask)
+
+        contour, hierarchy = pcv.roi.rectangle(img, 0, 0, img.shape[0], img.shape[1])
+        pcv.params.debug = 'print'
+        pcv.roi_objects(img=img, roi_contour=contour, roi_hierarchy=hierarchy, object_contour=objects, obj_hierarchy=object_hierarchy, roi_type='partial')
+        roi_file = find_file("*_obj_on_img.png", '.')
+        trash_file = find_file("*_roi_mask.png", '.')
+        transformed_img, path, filename = pcv.readimage(roi_file)
+        os.remove(trash_file)
+        os.remove(roi_file)
+        os.remove('input_image.png')
+        return transformed_img
+
+    def analyze_image(self, img):
+        """Analyze the input image."""
+        image, mask = self.create_image_mask(img)
+        objects, object_hierarchy = pcv.find_objects(img, mask)
+        obj, mask = pcv.object_composition(img=img, contours=objects, hierarchy=object_hierarchy)
+        return pcv.analyze_object(img, obj, mask)
+
+    def apply_pseudolandmarks(self, img):
         """Apply pseudolandmarks to the input image."""
-        masked_image = self.create_image_mask(image)
-        gray_masked_image = pcv.rgb2gray(masked_image)
-        binary_mask = pcv.threshold.binary(gray_img=gray_masked_image, threshold=128, max_value=255, object_type='light')
-        objects, object_hierarchy = pcv.find_objects(binary_mask, binary_mask)
-        composed_object, object_mask = pcv.object_composition(
-            img=masked_image, contours=objects, hierarchy=object_hierarchy
-        )
-        pcv.y_axis_pseudolandmarks(img=masked_image, obj=composed_object, mask=object_mask, label="default")
+        pcv.params.debug_outdir = '.'
+        image, mask = self.create_image_mask(img)
+        objects, object_hierarchy = pcv.find_objects(img, mask)
+        obj, mask = pcv.object_composition(img=img, contours=objects, hierarchy=object_hierarchy)
+        pcv.params.debug = 'print'
+        pcv.y_axis_pseudolandmarks(img=img, obj=obj, mask=mask, label="default")
+        pcv.params.debug = 'None'
+        pseudolandmarks_file = find_file("*_pseudolandmarks.png", '.')
+        transformed_img, path, filename = pcv.readimage(pseudolandmarks_file)
+        os.remove(pseudolandmarks_file)
+        return transformed_img
 
-        return masked_image
-
-    def create_color_histogram(self, image):
-        """Generate a color histogram for the input image."""
-        masked_image = self.create_image_mask(image)
-        
-        # Convert the mask to grayscale if it's not already
-        gray_masked_image = pcv.rgb2gray(masked_image)
-        
-        # Apply binary threshold to get a proper binary mask (single-channel CV_8U)
-        binary_mask = pcv.threshold.binary(gray_img=gray_masked_image, threshold=128, max_value=255, object_type='light')
-        
-        # Ensure the mask and image are the same size
-        if binary_mask.shape[:2] != image.shape[:2]:
-            raise ValueError("Mask size does not match the image size")
-        
-        # Analyze color using the binary mask
-        return pcv.analyze_color(rgb_img=image, mask=binary_mask, colorspaces='all', label="default")
+    def apply_edge_detection(self, img):
+        """Apply edge detection to the input image using Canny algorithm."""
+        edges = pcv.canny_edge_detect(img)
+        return edges
 
     def save_image(self, image, transformation_name, filename):
         """Save the transformed image to the destination directory."""
@@ -126,8 +138,9 @@ class ImageTransformer:
         """Apply selected transformations to a single image."""
         image, _, filename = pcv.readimage(image_path)
 
-        if args['apply_all']:
-            for key, transformation in TRANSFORMATIONS.items():
+        for key, transformation in TRANSFORMATIONS.items():
+            if args[key] or args['apply_all']:
+                pcv.params.debug = 'None'
                 transformed_image = transformation(self, image)
 
                 # If the transformation returns a tuple, unpack it to get the actual image
@@ -135,16 +148,6 @@ class ImageTransformer:
                     transformed_image = transformed_image[0]
 
                 self.save_image(transformed_image, key, filename)
-        else:
-            for key, transformation in TRANSFORMATIONS.items():
-                if args[key]:
-                    transformed_image = transformation(self, image)
-
-                    # If the transformation returns a tuple, unpack it to get the actual image
-                    if isinstance(transformed_image, tuple):
-                        transformed_image = transformed_image[0]
-
-                    self.save_image(transformed_image, key, filename)
 
     def process_directory_of_images(self, args):
         """Process all image files in a directory by applying transformations."""
@@ -152,23 +155,23 @@ class ImageTransformer:
         for image_file in image_files:
             self.process_single_image(image_file, args)
 
-
 def parse_arguments():
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
         prog='Image Transformation Tool',
         description='Program to apply various image transformations to a file or directory of files.'
     )
-    parser.add_argument('-dst', type=str, default='transformed_images')
     parser.add_argument('-src', type=str, default='input_images')
+    parser.add_argument('-dst', type=str, default='transformed_images')
+
     parser.add_argument('-blur', action='store_true')
     parser.add_argument('-mask', action='store_true')
     parser.add_argument('-roi', action='store_true')
     parser.add_argument('-analysis', action='store_true')
     parser.add_argument('-landmarks', action='store_true')
-    parser.add_argument('-colors', action='store_true')
+    parser.add_argument('-edges', action='store_true')
+
     parser.add_argument('-all', action='store_true')
-    parser.add_argument('-v', action='store_true')
 
     args = parser.parse_args()
     return {
@@ -179,10 +182,9 @@ def parse_arguments():
         'roi': args.roi,
         'analysis': args.analysis,
         'landmarks': args.landmarks,
-        'colors': args.colors,
+        'edges': args.edges,
         'apply_all': args.all
     }
-
 
 TRANSFORMATIONS = {
     "blur": ImageTransformer.apply_gaussian_blur,
@@ -190,9 +192,8 @@ TRANSFORMATIONS = {
     "roi": ImageTransformer.apply_roi_and_find_objects,
     "analysis": ImageTransformer.analyze_image,
     "landmarks": ImageTransformer.apply_pseudolandmarks,
-    "colors": ImageTransformer.create_color_histogram
+    "edges": ImageTransformer.apply_edge_detection,
 }
-
 
 if __name__ == '__main__':
     args = parse_arguments()
