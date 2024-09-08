@@ -1,10 +1,11 @@
 import argparse
 import os
+import shlex
 from plantcv import plantcv as pcv
 import sys
 import fnmatch
 
-def find_file(pattern, path):
+def find_matching_file(pattern, path):
     """Find a file matching the pattern in the given path."""
     for root, dirs, files in os.walk(path):
         for name in files:
@@ -19,7 +20,7 @@ class ImageTransformer:
         self.destination_directory = destination_directory
         pcv.params.debug_outdir = destination_directory
 
-    def get_image_files(self):
+    def get_image_file_paths(self):
         """Return a list of image file paths from the source directory."""
         image_files = []
         for item in os.listdir(self.source_directory):
@@ -60,12 +61,12 @@ class ImageTransformer:
         final_masked_image = pcv.apply_mask(img=masked_image, mask=filled_mask, mask_color='white')
         return final_masked_image, filled_mask
 
-    def apply_mask(self, image):
+    def apply_created_mask(self, image):
         """Apply the created mask to the input image."""
         masked_image, filled_mask = self.create_image_mask(image)
         return masked_image
 
-    def apply_roi_and_find_objects(self, img):
+    def apply_roi_and_detect_objects(self, img):
         """Apply ROI and find objects in the input image."""
         saturation_channel = pcv.rgb2gray_hsv(rgb_img=img, channel='s')
         binary_threshold = pcv.threshold.binary(gray_img=saturation_channel, threshold=40, max_value=255, object_type='dark')
@@ -94,8 +95,8 @@ class ImageTransformer:
         contour, hierarchy = pcv.roi.rectangle(img, 0, 0, img.shape[0], img.shape[1])
         pcv.params.debug = 'print'
         pcv.roi_objects(img=img, roi_contour=contour, roi_hierarchy=hierarchy, object_contour=objects, obj_hierarchy=object_hierarchy, roi_type='partial')
-        roi_file = find_file("*_obj_on_img.png", '.')
-        trash_file = find_file("*_roi_mask.png", '.')
+        roi_file = find_matching_file("*_obj_on_img.png", '.')
+        trash_file = find_matching_file("*_roi_mask.png", '.')
         transformed_img, path, filename = pcv.readimage(roi_file)
         os.remove(trash_file)
         os.remove(roi_file)
@@ -118,7 +119,7 @@ class ImageTransformer:
         pcv.params.debug = 'print'
         pcv.y_axis_pseudolandmarks(img=img, obj=obj, mask=mask, label="default")
         pcv.params.debug = 'None'
-        pseudolandmarks_file = find_file("*_pseudolandmarks.png", '.')
+        pseudolandmarks_file = find_matching_file("*_pseudolandmarks.png", '.')
         transformed_img, path, filename = pcv.readimage(pseudolandmarks_file)
         os.remove(pseudolandmarks_file)
         return transformed_img
@@ -128,7 +129,7 @@ class ImageTransformer:
         edges = pcv.canny_edge_detect(img)
         return edges
 
-    def save_image(self, image, transformation_name, filename):
+    def save_transformed_image(self, image, transformation_name, filename):
         """Save the transformed image to the destination directory."""
         output_path = os.path.join(self.destination_directory, f"{filename}_{transformation_name}.png")
         print(output_path)
@@ -147,15 +148,15 @@ class ImageTransformer:
                 if isinstance(transformed_image, tuple):
                     transformed_image = transformed_image[0]
 
-                self.save_image(transformed_image, key, filename)
+                self.save_transformed_image(transformed_image, key, filename)
 
     def process_directory_of_images(self, args):
         """Process all image files in a directory by applying transformations."""
-        image_files = self.get_image_files()
+        image_files = self.get_image_file_paths()
         for image_file in image_files:
             self.process_single_image(image_file, args)
 
-def parse_arguments():
+def parse_command_line_arguments():
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
         prog='Image Transformation Tool',
@@ -189,14 +190,14 @@ def parse_arguments():
 TRANSFORMATIONS = {
     "blur": ImageTransformer.apply_gaussian_blur,
     "mask": ImageTransformer.create_image_mask,
-    "roi": ImageTransformer.apply_roi_and_find_objects,
+    "roi": ImageTransformer.apply_roi_and_detect_objects,
     "analysis": ImageTransformer.analyze_image,
     "landmarks": ImageTransformer.apply_pseudolandmarks,
     "edges": ImageTransformer.apply_edge_detection,
 }
 
 if __name__ == '__main__':
-    args = parse_arguments()
+    args = parse_command_line_arguments()
 
     # Initialize the image transformer with source and destination directories
     transformer = ImageTransformer(args['source_directory'], args['destination_directory'])
@@ -209,5 +210,8 @@ if __name__ == '__main__':
 
     if os.path.isfile(args['source_directory']):
         transformer.process_single_image(args['source_directory'], args)
+        # script = f"python3 tester.py --show {shlex.quote(args['source_directory'])} {shlex.quote(args['destination_directory'])}"
+        # os.system(script)
+
     elif os.path.isdir(args['source_directory']):
         transformer.process_directory_of_images(args)
