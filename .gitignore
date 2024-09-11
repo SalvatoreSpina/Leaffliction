@@ -158,3 +158,8 @@ Part_2/leaves.zip
 *.zip
 /Part_3/test_images
 /Part_3/transformed_images
+/dataset
+/Part_1
+/Part_4/extracted_data
+/Part_4/output
+/Part_4/splitted

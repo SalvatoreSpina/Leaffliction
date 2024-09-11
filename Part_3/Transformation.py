@@ -1,9 +1,9 @@
-import argparse
 import os
-import shlex
-from plantcv import plantcv as pcv
 import sys
+import shlex
 import fnmatch
+import argparse
+from plantcv import plantcv as pcv
 
 def find_matching_file(pattern, path):
     """Find a file matching the pattern in the given path."""
