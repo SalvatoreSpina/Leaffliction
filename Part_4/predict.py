@@ -4,93 +4,149 @@ import numpy as np
 import os
 import tensorflow as tf
 import argparse
+from collections import defaultdict
 
-def fetch_class_names(directory):
+def get_class_labels(training_directory):
     """
-    Fetch class names from the subdirectory structure in the training directory.
+    Retrieve the class labels from the subdirectory structure of the training directory.
     """
-    return sorted([name for name in os.listdir(directory) if os.path.isdir(os.path.join(directory, name))])
+    return sorted([subdir for subdir in os.listdir(training_directory) if os.path.isdir(os.path.join(training_directory, subdir))])
 
-def classify_and_display(image_path, model, class_names):
+def get_model_name_based_on_folder(training_directory):
+    """
+    Determine the model name based on whether 'Apple' or 'Grapes' is found in the folder name.
+    Defaults to 'Model' if neither is found.
+    """
+    folder_name = os.path.basename(os.path.normpath(training_directory))
+    if "apple" in folder_name.lower():
+        return "Apple_Model"
+    elif "grape" in folder_name.lower():
+        return "Grape_Model"
+    else:
+        return "Model"
+
+def classify_image_and_display_results(image_path, trained_model, class_labels):
+    """
+    Classifies a single image and displays both the original and processed images 
+    along with the predicted class.
+    """
     # Load and preprocess the image
-    img = Image.open(image_path)
-    img_resized = img.resize((150, 150))
-    img_array = np.array(img_resized) / 255.0
-    img_array = np.expand_dims(img_array, axis=0)  # Add batch dimension
+    image = Image.open(image_path)
+    resized_image = image.resize((150, 150))  # Resize the image for model input
+    image_array = np.array(resized_image) / 255.0  # Normalize the pixel values
+    image_array = np.expand_dims(image_array, axis=0)  # Add batch dimension for prediction
 
-    # Predict the class
-    predictions = model.predict(img_array)
-    predicted_class = np.argmax(predictions[0])
-    class_name = class_names[predicted_class]
+    # Make a prediction using the trained model
+    predictions = trained_model.predict(image_array)
+    predicted_class_index = np.argmax(predictions[0])  # Get the index of the highest prediction
+    predicted_class_label = class_labels[predicted_class_index]
 
-    # Create a subplot with two images (original and a version of the processed image)
+    # Display the original and processed image
     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
     
-    # Display the original image
-    ax[0].imshow(img)
+    # Original image
+    ax[0].imshow(image)
     ax[0].axis('off')
     
-    # Display the processed image (for simplicity, use the same image but can be enhanced further)
-    ax[1].imshow(img)
+    # Display the processed image (in this case, showing the same image)
+    ax[1].imshow(image)
     ax[1].axis('off')
     
-    # Add a title and predicted class
-    fig.suptitle("DL Classification", fontsize=16)
-    plt.figtext(0.5, 0.01, f"Class predicted : {class_name}", ha="center", fontsize=12, color="green")
+    # Title and predicted class label
+    fig.suptitle("Deep Learning Image Classification", fontsize=16)
+    plt.figtext(0.5, 0.01, f"Predicted Class: {predicted_class_label}", ha="center", fontsize=12, color="green")
 
-    # Show the plot
     plt.show()
 
-def classify_folder(folder_path, model, class_names):
+def classify_images_in_folder(folder_path, trained_model, class_labels):
     """
-    Classify all images in a folder and print the predicted vs expected labels.
+    Classifies all images in the specified folder and calculates overall accuracy,
+    as well as class-wise accuracy, printing the results and showing a bar graph.
     """
-    correct_predictions = 0
-    total_predictions = 0
+    total_correct = 0
+    total_images = 0
+    class_correct_count = defaultdict(int)
+    class_total_count = defaultdict(int)
 
     for class_name in os.listdir(folder_path):
-        print(f"Class: {class_name}")
-        class_folder = os.path.join(folder_path, class_name)
-        if os.path.isdir(class_folder):
-            for image_name in os.listdir(class_folder):
-                image_path = os.path.join(class_folder, image_name)
-                if image_path.lower().endswith(('png', 'jpg', 'jpeg', '.JPG')):
-                    img = Image.open(image_path)
-                    img_resized = img.resize((150, 150))
-                    img_array = np.array(img_resized) / 255.0
-                    img_array = np.expand_dims(img_array, axis=0)
+        class_folder_path = os.path.join(folder_path, class_name)
+        if os.path.isdir(class_folder_path):
+            for image_filename in os.listdir(class_folder_path):
+                image_path = os.path.join(class_folder_path, image_filename)
+                if image_path.lower().endswith(('png', 'jpg', 'jpeg', 'JPEG', 'JPG')):
+                    # Load and preprocess the image
+                    image = Image.open(image_path)
+                    resized_image = image.resize((150, 150))
+                    image_array = np.array(resized_image) / 255.0
+                    image_array = np.expand_dims(image_array, axis=0)
 
                     # Predict the class
-                    predictions = model.predict(img_array)
-                    predicted_class = np.argmax(predictions[0])
-                    predicted_class_name = class_names[predicted_class]
+                    predictions = trained_model.predict(image_array)
+                    predicted_class_index = np.argmax(predictions[0])
+                    predicted_class_label = class_labels[predicted_class_index]
 
-                    # Print the expected and predicted class
-                    print(f"Image: {image_name} | Expected: {class_name} | Predicted: {predicted_class_name}")
+                    # Print the expected vs predicted class
+                    print(f"Image: {image_filename} | Expected: {class_name} | Predicted: {predicted_class_label}")
 
-                    # Track accuracy
-                    total_predictions += 1
-                    if predicted_class_name == class_name:
-                        correct_predictions += 1
+                    # Track overall and class-specific accuracy
+                    total_images += 1
+                    class_total_count[class_name] += 1
+                    if predicted_class_label == class_name:
+                        total_correct += 1
+                        class_correct_count[class_name] += 1
     
-    # Calculate and print accuracy
-    accuracy = correct_predictions / total_predictions if total_predictions > 0 else 0
-    print(f"Total Accuracy: {accuracy * 100:.2f}%")
+    # Calculate and display overall accuracy
+    overall_accuracy = total_correct / total_images if total_images > 0 else 0
+    print(f"Overall Accuracy: {overall_accuracy * 100:.2f}%")
+
+    # Calculate and display accuracy by class
+    print("\nClass-wise Accuracy:")
+    class_accuracies = {}
+    for class_name in class_labels:
+        accuracy = class_correct_count[class_name] / class_total_count[class_name] if class_total_count[class_name] > 0 else 0
+        class_accuracies[class_name] = accuracy
+        print(f"{class_name}: {accuracy * 100:.2f}%")
+
+    # Plot the class-wise accuracies
+    plot_class_accuracy_bar_chart(class_accuracies)
+
+def plot_class_accuracy_bar_chart(class_accuracies):
+    """
+    Plot a bar chart for class-wise accuracies.
+    """
+    classes = list(class_accuracies.keys())
+    accuracies = list(class_accuracies.values())
+
+    plt.figure(figsize=(10, 6))
+    plt.bar(classes, accuracies, color='lightblue')
+    plt.xlabel('Disease Classes')
+    plt.ylabel('Accuracy')
+    plt.title('Class-wise Accuracy')
+    plt.ylim(0, 1)  # Accuracy range from 0 to 1
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    plt.show()
 
 if __name__ == '__main__':
-    # Set up argument parser
-    parser = argparse.ArgumentParser(description='Classify an image or folder of images using a trained model.')
-    parser.add_argument('train_directory', type=str, help='Path to the training directory containing class subdirectories.')
-    parser.add_argument('image_or_folder', type=str, help='Path to the image or folder to be classified.')
-    parser.add_argument('-range', action='store_true', help='Classify all images in the folder and print the accuracy.')
+    # Argument parser setup
+    parser = argparse.ArgumentParser(description='Classify images using a pre-trained model.')
+    parser.add_argument('training_directory', type=str, help='Path to the directory containing training subdirectories.')
+    parser.add_argument('input_image_or_folder', type=str, help='Path to the image or folder for classification.')
+    parser.add_argument('-batch', action='store_true', help='If set, classify all images in the folder and calculate accuracy.')
     args = parser.parse_args()
 
-    # Load the model
-    model = tf.keras.models.load_model('output/model.h5')
+    # Determine model name based on folder (Apple or Grape)
+    model_name = get_model_name_based_on_folder(args.training_directory)
 
-    class_names = fetch_class_names(args.train_directory)
+    # Load the trained model
+    model_path = f'output/{model_name}.h5'
+    trained_model = tf.keras.models.load_model(model_path)
 
-    if args.range:
-        classify_folder(args.image_or_folder, model, class_names)
+    # Fetch class labels from the training directory structure
+    class_labels = get_class_labels(args.training_directory)
+
+    # Classify based on the input (single image or batch of images)
+    if args.batch:
+        classify_images_in_folder(args.input_image_or_folder, trained_model, class_labels)
     else:
-        classify_and_display(args.image_or_folder, model, class_names)
+        classify_image_and_display_results(args.input_image_or_folder, trained_model, class_labels)

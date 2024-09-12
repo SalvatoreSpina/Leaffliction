@@ -116,17 +116,22 @@ class ImageAugmentor:
         stratified_sample.index = stratified_sample.index.droplevel(0)
         return stratified_sample
 
-    def balance_and_split_dataset(self):
+    def balance_and_split_dataset(self, no_validation=False):
         """
         Splits data into training and validation sets and applies augmentations.
+        If no_validation is set to True, it will only create the training set without splitting into validation.
         """
         image_paths = self.gather_image_paths()
         image_dataframe = self.create_image_dataframe(image_paths)
 
         for plant_name, group_dataframe in image_dataframe.groupby('plant_name'):
             augmentation_count = {}
-            validation_dataframe = self.stratified_sample_dataframe(group_dataframe, 'disease_class', 25)
-            training_dataframe = group_dataframe.drop(validation_dataframe.index)
+
+            if not no_validation:
+                validation_dataframe = self.stratified_sample_dataframe(group_dataframe, 'disease_class', 25)
+                training_dataframe = group_dataframe.drop(validation_dataframe.index)
+            else:
+                training_dataframe = group_dataframe
 
             max_augmentations_per_class = training_dataframe['disease_class'].value_counts().min() * self.number_of_transformations
 
@@ -144,10 +149,11 @@ class ImageAugmentor:
                         augmentation_count[disease_class] -= 1
                 copy(image_path, training_output_path)
 
-            for image_path, disease_class in zip(validation_dataframe['image_file_path'], validation_dataframe['disease_class']):
-                validation_output_path = os.path.join(self.validation_output_directory, plant_name, disease_class)
-                os.makedirs(validation_output_path, exist_ok=True)
-                copy(image_path, validation_output_path)
+            if not no_validation:
+                for image_path, disease_class in zip(validation_dataframe['image_file_path'], validation_dataframe['disease_class']):
+                    validation_output_path = os.path.join(self.validation_output_directory, plant_name, disease_class)
+                    os.makedirs(validation_output_path, exist_ok=True)
+                    copy(image_path, validation_output_path)
 
     def create_balanced_dataset(self):
         """
@@ -204,6 +210,8 @@ def parse_arguments():
     )
     parser.add_argument('source_directory', metavar='source_directory', type=str, nargs=1,
                         help='Directory containing images to augment.')
+    parser.add_argument('-no_validation', action='store_true',
+                        help='If set, the dataset will not be split into training and validation.')
     return parser.parse_args()
 
 if __name__ == '__main__':
@@ -219,4 +227,7 @@ if __name__ == '__main__':
     if os.path.isfile(directory_path):
         augmentor.augment_single_image(directory_path)
     elif os.path.isdir(directory_path):
-        augmentor.balance_and_split_dataset()
+        if args.no_validation:
+            augmentor.create_balanced_dataset()
+        else:
+            augmentor.balance_and_split_dataset()

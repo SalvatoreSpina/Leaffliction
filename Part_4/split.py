@@ -85,7 +85,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Split dataset or copy folders.")
     parser.add_argument("dataset_dir", help="Path to the dataset directory containing category subdirectories.")
     parser.add_argument("output_dir", help="Base path for the output directory. The script will create 'dataset' or 'datasets' inside this base path.")
-    parser.add_argument("--split_ratio", type=float, default=0.8, help="Percentage of data to be used for training. Default is 80%.")
+    parser.add_argument("--split_ratio", type=float, default=0.85, help="Percentage of data to be used for training. Default is 80%.")
     parser.add_argument("-data", action="store_true", help="If used, split the dataset into training and validation sets. Otherwise, copy folders like the bash script.")
 
     args = parser.parse_args()
