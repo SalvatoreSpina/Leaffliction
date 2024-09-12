@@ -19,7 +19,7 @@ python3 ../Part_2/Augmentation.py splitted/datasets/Apples/training -no_validati
 # Replace Apples training images with augmented ones
 echo "Replacing Apples training images with augmented images..."
 rm -rf splitted/datasets/Apples/training/Apples
-mv Augmented_directory/Apples splitted/datasets/Apples/training/
+mv augmented_directory/Apples splitted/datasets/Apples/training/
 
 # Step 5: Augment training data for Grapes
 echo "Augmenting Grapes training data..."
@@ -28,6 +28,10 @@ python3 ../Part_2/Augmentation.py splitted/datasets/Grapes/training -no_validati
 # Replace Grapes training images with augmented ones
 echo "Replacing Grapes training images with augmented images..."
 rm -rf splitted/datasets/Grapes/training/Grapes
-mv Augmented_directory/Grapes splitted/datasets/Grapes/training/
+mv augmented_directory/Grapes splitted/datasets/Grapes/training/
 
 echo "Full dataset creation and augmentation process completed."
+
+# Step 6: Run the full dataset through the model
+python3 train.py splitted/datasets/Apples/training/Apples
+python3 train.py splitted/datasets/Apples/training/Grapes
