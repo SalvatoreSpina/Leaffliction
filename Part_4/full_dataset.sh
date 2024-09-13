@@ -34,4 +34,12 @@ echo "Full dataset creation and augmentation process completed."
 
 # Step 6: Run the full dataset through the model
 python3 train.py splitted/datasets/Apples/training/Apples
-python3 train.py splitted/datasets/Apples/training/Grapes
+python3 train.py splitted/datasets/Grapes/training/Grapes
+
+# # Step 7: Evaluate the model
+
+# echo "Evaluating the model on Apples..."
+# python3 predict.py splitted/datasets/Apples/training/Apples splitted/datasets/Apples/validation/Apples -batch
+
+# echo "Evaluating the model on Grapes..."
+# python3 predict.py splitted/datasets/Grapes/training/Grapes/ splitted/datasets/Grapes/training/Grapes -batch

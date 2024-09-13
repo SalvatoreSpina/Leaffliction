@@ -30,32 +30,35 @@ def classify_image_and_display_results(image_path, trained_model, class_labels):
     Classifies a single image and displays both the original and processed images 
     along with the predicted class.
     """
-    # Load and preprocess the image
-    image = Image.open(image_path)
-    resized_image = image.resize((150, 150))  # Resize the image for model input
-    image_array = np.array(resized_image) / 255.0  # Normalize the pixel values
-    image_array = np.expand_dims(image_array, axis=0)  # Add batch dimension for prediction
+    original_image = Image.open(image_path)
+
+    # Preprocess the image (resize and normalize)
+    processed_image = original_image.resize((150, 150))  # Resize the image for model input
+    processed_image_array = np.array(processed_image) / 255.0  # Normalize pixel values
+    processed_image_array = np.expand_dims(processed_image_array, axis=0)  # Add batch dimension for prediction
 
     # Make a prediction using the trained model
-    predictions = trained_model.predict(image_array)
+    predictions = trained_model.predict(processed_image_array)
     predicted_class_index = np.argmax(predictions[0])  # Get the index of the highest prediction
     predicted_class_label = class_labels[predicted_class_index]
 
-    # Display the original and processed image
+    # Display the original and processed images side by side
     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
     
-    # Original image
-    ax[0].imshow(image)
+    # Show the original image
+    ax[0].imshow(original_image)
     ax[0].axis('off')
-    
-    # Display the processed image (in this case, showing the same image)
-    ax[1].imshow(image)
-    ax[1].axis('off')
-    
-    # Title and predicted class label
-    fig.suptitle("Deep Learning Image Classification", fontsize=16)
-    plt.figtext(0.5, 0.01, f"Predicted Class: {predicted_class_label}", ha="center", fontsize=12, color="green")
+    ax[0].set_title('Original Image')
 
+    # Show the processed image (after resizing and normalization)
+    ax[1].imshow(processed_image)  # Show the resized version before normalization
+    ax[1].axis('off')
+    ax[1].set_title('Processed Image (Resized)')
+    
+    # Add a title with the predicted class
+    fig.suptitle(f"Predicted Class: {predicted_class_label}", fontsize=16)
+
+    # Display the images
     plt.show()
 
 def classify_images_in_folder(folder_path, trained_model, class_labels):
@@ -73,7 +76,8 @@ def classify_images_in_folder(folder_path, trained_model, class_labels):
         if os.path.isdir(class_folder_path):
             for image_filename in os.listdir(class_folder_path):
                 image_path = os.path.join(class_folder_path, image_filename)
-                if image_path.lower().endswith(('png', 'jpg', 'jpeg', 'JPEG', 'JPG')):
+                
+                if image_path.lower().endswith(('png', 'jpg', 'jpeg')):
                     # Load and preprocess the image
                     image = Image.open(image_path)
                     resized_image = image.resize((150, 150))

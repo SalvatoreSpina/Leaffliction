@@ -72,23 +72,13 @@ def save_model_and_sample_images(trained_model, data_generator, model_name, outp
     # Save the trained model with the model name (e.g., Apple_Model.h5 or Grape_Model.h5)
     model_path = os.path.join(output_directory, f'{model_name}.h5')
     trained_model.save(model_path)
-    
-    # Save some augmented images as examples
-    images_batch, labels_batch = next(data_generator)  # Get a batch of images and labels
-    for i, (image, label) in enumerate(zip(images_batch, labels_batch)):
-        image_pil = Image.fromarray((image * 255).astype(np.uint8))  # Convert to PIL Image
-        image_path = os.path.join(output_directory, f'{model_name}_augmented_image_{i}.png')
-        image_pil.save(image_path)  # Save the image with a model-specific name
 
     # Zip the model and images
     zip_path = os.path.join(output_directory, zip_filename)
     with zipfile.ZipFile(zip_path, 'w') as zf:
         zf.write(model_path)
-        for i in range(len(images_batch)):
-            image_path = os.path.join(output_directory, f'{model_name}_augmented_image_{i}.png')
-            zf.write(image_path)
     
-    print(f"{model_name} and augmented images saved to {zip_path}")
+    print(f"{model_name} saved to {zip_path}")
 
 if __name__ == '__main__':
     import argparse
