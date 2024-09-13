@@ -42,4 +42,4 @@ python3 train.py splitted/datasets/Grapes/training/Grapes
 # python3 predict.py splitted/datasets/Apples/training/Apples splitted/datasets/Apples/validation/Apples -batch
 
 # echo "Evaluating the model on Grapes..."
-# python3 predict.py splitted/datasets/Grapes/training/Grapes/ splitted/datasets/Grapes/training/Grapes -batch
+# python3 predict.py splitted/datasets/Grapes/training/Grapes/ splitted/datasets/Grapes/validation/Grapes -batch
