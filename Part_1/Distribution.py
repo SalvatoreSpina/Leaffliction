@@ -60,20 +60,30 @@ def main(directory, save, save_path):
     plant_counter = analyze_images(images)
     plot_charts(plant_counter, directory_name, save, save_path)
 
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Analyze and plot the distribution of plant images in a directory.')
-    parser.add_argument('directory', type=str, help='Path to the directory containing plant images.')
-    parser.add_argument('--save', action='store_true', help='Flag to save the charts as image files.')
-    parser.add_argument('--save_path', type=str, default='.', help='Path to save the charts if --save is specified. Default is the current directory.')
+    try:
+        parser = argparse.ArgumentParser(description='Analyze and plot the distribution of plant images in a directory.')
+        parser.add_argument('directory', type=str, help='Path to the directory containing plant images.')
+        parser.add_argument('--save', action='store_true', help='Flag to save the charts as image files.')
+        parser.add_argument('--save_path', type=str, default='.', help='Path to save the charts if --save is specified. Default is the current directory.')
 
-    args = parser.parse_args()
+        args = parser.parse_args()
 
-    if not os.path.isdir(args.directory):
-        print(f"The path '{args.directory}' is not a valid directory.")
+        if not os.path.isdir(args.directory):
+            print(f"The path '{args.directory}' is not a valid directory.")
+            sys.exit(1)
+
+        if args.save and not os.path.exists(args.save_path):
+            print(f"The save path '{args.save_path}' does not exist.")
+            sys.exit(1)
+
+        main(args.directory, args.save, args.save_path)
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
         sys.exit(1)
 
-    if args.save and not os.path.exists(args.save_path):
-        print(f"The save path '{args.save_path}' does not exist.")
-        sys.exit(1)
-
-    main(args.directory, args.save, args.save_path)
+    except KeyboardInterrupt:
+        print("\nProgram interrupted by user.")
+        sys.exit(0)

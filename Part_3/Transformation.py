@@ -153,6 +153,7 @@ class ImageTransformer:
     def process_directory_of_images(self, args):
         """Process all image files in a directory by applying transformations."""
         image_files = self.get_image_file_paths()
+        print(f"Found {len(image_files)} image files in the directory.")
         for image_file in image_files:
             self.process_single_image(image_file, args)
 
@@ -197,21 +198,33 @@ TRANSFORMATIONS = {
 }
 
 if __name__ == '__main__':
-    args = parse_command_line_arguments()
+    try:
+        args = parse_command_line_arguments()
 
-    # Initialize the image transformer with source and destination directories
-    transformer = ImageTransformer(args['source_directory'], args['destination_directory'])
+        # Initialize the image transformer with source and destination directories
+        transformer = ImageTransformer(args['source_directory'], args['destination_directory'])
 
-    if not os.path.exists(args['source_directory']):
-        sys.exit('The specified source directory does not exist or is not accessible.')
+        if not os.path.exists(args['source_directory']):
+            sys.exit('The specified source directory does not exist or is not accessible.')
 
-    if not os.path.exists(args['destination_directory']):
-        os.mkdir(args['destination_directory'])
+        if not os.path.exists(args['destination_directory']):
+            os.mkdir(args['destination_directory'])
 
-    if os.path.isfile(args['source_directory']):
-        transformer.process_single_image(args['source_directory'], args)
-        # script = f"python3 tester.py --show {shlex.quote(args['source_directory'])} {shlex.quote(args['destination_directory'])}"
-        # os.system(script)
+        if os.path.isfile(args['source_directory']):
+            transformer.process_single_image(args['source_directory'], args)
+            # This lines should show the image in the GUI but it has some issues
+            # Proably due to wrong environment. Uncomment the print and use the command manually
+            # script = f"python3 tester.py --show {shlex.quote(args['source_directory'])} {shlex.quote(args['destination_directory'])}"
+            # print(script)
+            # os.system(script)
 
-    elif os.path.isdir(args['source_directory']):
-        transformer.process_directory_of_images(args)
+        elif os.path.isdir(args['source_directory']):
+            transformer.process_directory_of_images(args)
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        sys.exit(1)
+
+    except KeyboardInterrupt:
+        print("\nProgram interrupted by user.")
+        sys.exit(0)

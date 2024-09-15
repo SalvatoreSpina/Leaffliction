@@ -40,6 +40,7 @@ def clean_up(clean_all=False):
             shutil.rmtree(TARGET_DIR)
             print(f"Removed existing directory: {TARGET_DIR}")
 
+
 def download_and_extract_zip(url, zip_file, extract_dir):
     """Download and extract the ZIP file."""
     if not os.path.exists(zip_file):
@@ -52,6 +53,7 @@ def download_and_extract_zip(url, zip_file, extract_dir):
         with zipfile.ZipFile(zip_file, 'r') as zip_ref:
             zip_ref.extractall(extract_dir)
         print("Extraction complete.")
+
 
 def pick_random_image(extract_dir):
     """Pick a random image from the dataset/images folder and copy it to the SINGLE_IMAGE_DIR."""
@@ -89,12 +91,14 @@ def pick_random_image(extract_dir):
     shutil.copy(src_path, dest_path)
     print(f"Copied random image {random_image} to {dest_path}")
 
+
 def extract_number_from_image_name(image_name):
     """Extract the number from the image name in parentheses."""
     match = re.search(r'\((\d+)\)', image_name)
     if match:
         return match.group(1)
     return None
+
 
 def show_images(image_name, folders):
     """Show all images that share the same digit inside the specified folders."""
@@ -145,6 +149,7 @@ def show_images(image_name, folders):
     plt.tight_layout()
     plt.show()
 
+
 def main():
     parser = argparse.ArgumentParser(description="Process dataset options.")
     parser.add_argument('--clean', action='store_true', help="Clean the dataset directory.")
@@ -171,6 +176,7 @@ def main():
         clean_up()
         download_and_extract_zip(URL, ZIP_FILE, EXTRACT_DIR)
         print("Dataset is ready for use.")
+
 
 if __name__ == "__main__":
     try:

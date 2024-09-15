@@ -82,30 +82,38 @@ def ensure_output_dir_exists(output_dir):
         print(f"Output directory already exists: {output_dir}")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Split dataset or copy folders.")
-    parser.add_argument("dataset_dir", help="Path to the dataset directory containing category subdirectories.")
-    parser.add_argument("output_dir", help="Base path for the output directory. The script will create 'dataset' or 'datasets' inside this base path.")
-    parser.add_argument("--split_ratio", type=float, default=0.85, help="Percentage of data to be used for training. Default is 80%.")
-    parser.add_argument("-data", action="store_true", help="If used, split the dataset into training and validation sets. Otherwise, copy folders like the bash script.")
+    try:
+        parser = argparse.ArgumentParser(description="Split dataset or copy folders.")
+        parser.add_argument("dataset_dir", help="Path to the dataset directory containing category subdirectories.")
+        parser.add_argument("output_dir", help="Base path for the output directory. The script will create 'dataset' or 'datasets' inside this base path.")
+        parser.add_argument("--split_ratio", type=float, default=0.85, help="Percentage of data to be used for training. Default is 80%.")
+        parser.add_argument("-data", action="store_true", help="If used, split the dataset into training and validation sets. Otherwise, copy folders like the bash script.")
 
-    args = parser.parse_args()
+        args = parser.parse_args()
 
-    # Set the appropriate directory structure (either 'dataset' or 'datasets')
-    if args.data:
-        wrapped_output_dir = os.path.join(args.output_dir, "datasets")
-    else:
-        wrapped_output_dir = os.path.join(args.output_dir, "dataset")
+        # Set the appropriate directory structure (either 'dataset' or 'datasets')
+        if args.data:
+            wrapped_output_dir = os.path.join(args.output_dir, "datasets")
+        else:
+            wrapped_output_dir = os.path.join(args.output_dir, "dataset")
 
-    # Ensure that the output directory exists
-    ensure_output_dir_exists(wrapped_output_dir)
+        # Ensure that the output directory exists
+        ensure_output_dir_exists(wrapped_output_dir)
 
-    # If -data is used, split dataset into training and validation sets
-    if args.data:
-        split_dataset(args.dataset_dir, wrapped_output_dir, args.split_ratio)
-    else:
-        # Otherwise, just split the folders
-        output_dirs = {
-            "Grapes": os.path.join(wrapped_output_dir, "Grapes"),
-            "Apples": os.path.join(wrapped_output_dir, "Apples")
-        }
-        copy_folders(args.dataset_dir, output_dirs)
+        # If -data is used, split dataset into training and validation sets
+        if args.data:
+            split_dataset(args.dataset_dir, wrapped_output_dir, args.split_ratio)
+        else:
+            # Otherwise, just split the folders
+            output_dirs = {
+                "Grapes": os.path.join(wrapped_output_dir, "Grapes"),
+                "Apples": os.path.join(wrapped_output_dir, "Apples")
+            }
+            copy_folders(args.dataset_dir, output_dirs)
+    
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        sys.exit(1)
+    except KeyboardInterrupt:
+        print("\nExiting...")
+        sys.exit(0)

@@ -4,6 +4,7 @@ import shutil
 import zipfile
 import wget
 import argparse
+import sys
 
 # Constants
 URL = "https://cdn.intra.42.fr/document/document/17447/leaves.zip"

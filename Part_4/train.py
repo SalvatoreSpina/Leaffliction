@@ -1,11 +1,9 @@
 import os
 import zipfile
-import numpy as np
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
 from tensorflow.keras.optimizers import Adam
-from PIL import Image
 
 def get_model_name_based_on_folder(training_directory):
     """
@@ -81,12 +79,19 @@ def save_model_and_sample_images(trained_model, data_generator, model_name, outp
     print(f"{model_name} saved to {zip_path}")
 
 if __name__ == '__main__':
-    import argparse
-    parser = argparse.ArgumentParser(description='Train a model for leaf disease classification.')
-    parser.add_argument('training_directory', type=str, help='Directory with training images.')
-    args = parser.parse_args()
+    try:
+        import argparse
+        parser = argparse.ArgumentParser(description='Train a model for leaf disease classification.')
+        parser.add_argument('training_directory', type=str, help='Directory with training images.')
+        args = parser.parse_args()
 
-    model_name = get_model_name_based_on_folder(args.training_directory)
+        model_name = get_model_name_based_on_folder(args.training_directory)
 
-    trained_model, data_generator = train_cnn_model(args.training_directory)
-    save_model_and_sample_images(trained_model, data_generator, model_name)
+        trained_model, data_generator = train_cnn_model(args.training_directory)
+        save_model_and_sample_images(trained_model, data_generator, model_name)
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    except KeyboardInterrupt:
+        print("\nProgram interrupted by user.")
+        sys.exit(0)

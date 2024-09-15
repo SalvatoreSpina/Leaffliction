@@ -214,20 +214,28 @@ def parse_arguments():
                         help='If set, the dataset will not be split into training and validation.')
     return parser.parse_args()
 
+
 if __name__ == '__main__':
-    plt.rcParams["figure.figsize"] = (10, 10)
-    args = parse_arguments()
-    directory_path = args.source_directory[0]
 
-    if not os.path.exists(directory_path):
-        sys.exit("The directory does not exist or is not accessible.")
-    
-    augmentor = ImageAugmentor(source_directory=directory_path)
+    try:
+        plt.rcParams["figure.figsize"] = (10, 10)
+        args = parse_arguments()
+        directory_path = args.source_directory[0]
 
-    if os.path.isfile(directory_path):
-        augmentor.augment_single_image(directory_path)
-    elif os.path.isdir(directory_path):
-        if args.no_validation:
-            augmentor.create_balanced_dataset()
-        else:
-            augmentor.balance_and_split_dataset()
+        if not os.path.exists(directory_path):
+            sys.exit("The directory does not exist or is not accessible.")
+
+        augmentor = ImageAugmentor(source_directory=directory_path)
+
+        if os.path.isfile(directory_path):
+            augmentor.augment_single_image(directory_path)
+        elif os.path.isdir(directory_path):
+            if args.no_validation:
+                augmentor.create_balanced_dataset()
+            else:
+                augmentor.balance_and_split_dataset()
+    except Exception as e:
+        print(e)
+        sys.exit(1)
+    except KeyboardInterrupt:
+        sys.exit(0)

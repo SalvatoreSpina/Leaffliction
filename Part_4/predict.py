@@ -132,25 +132,33 @@ def plot_class_accuracy_bar_chart(class_accuracies):
     plt.show()
 
 if __name__ == '__main__':
-    # Argument parser setup
-    parser = argparse.ArgumentParser(description='Classify images using a pre-trained model.')
-    parser.add_argument('training_directory', type=str, help='Path to the directory containing training subdirectories.')
-    parser.add_argument('input_image_or_folder', type=str, help='Path to the image or folder for classification.')
-    parser.add_argument('-batch', action='store_true', help='If set, classify all images in the folder and calculate accuracy.')
-    args = parser.parse_args()
+    try:
+        # Argument parser setup
+        parser = argparse.ArgumentParser(description='Classify images using a pre-trained model.')
+        parser.add_argument('training_directory', type=str, help='Path to the directory containing training subdirectories.')
+        parser.add_argument('input_image_or_folder', type=str, help='Path to the image or folder for classification.')
+        parser.add_argument('-batch', action='store_true', help='If set, classify all images in the folder and calculate accuracy.')
+        args = parser.parse_args()
 
-    # Determine model name based on folder (Apple or Grape)
-    model_name = get_model_name_based_on_folder(args.training_directory)
+        # Determine model name based on folder (Apple or Grape)
+        model_name = get_model_name_based_on_folder(args.training_directory)
 
-    # Load the trained model
-    model_path = f'output/{model_name}.h5'
-    trained_model = tf.keras.models.load_model(model_path)
+        # Load the trained model
+        model_path = f'output/{model_name}.h5'
+        trained_model = tf.keras.models.load_model(model_path)
 
-    # Fetch class labels from the training directory structure
-    class_labels = get_class_labels(args.training_directory)
+        # Fetch class labels from the training directory structure
+        class_labels = get_class_labels(args.training_directory)
 
-    # Classify based on the input (single image or batch of images)
-    if args.batch:
-        classify_images_in_folder(args.input_image_or_folder, trained_model, class_labels)
-    else:
-        classify_image_and_display_results(args.input_image_or_folder, trained_model, class_labels)
+        # Classify based on the input (single image or batch of images)
+        if args.batch:
+            classify_images_in_folder(args.input_image_or_folder, trained_model, class_labels)
+        else:
+            classify_image_and_display_results(args.input_image_or_folder, trained_model, class_labels)
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        exit(1)
+    except KeyboardInterrupt:
+        print("\nExiting...")
+        exit(0)
