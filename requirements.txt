@@ -1,3 +1,6 @@
+# Basic Python Libraries
+wget>=3.2
+
 # Core numerical and scientific libraries
 numpy>=1.21.0            # Ensure compatibility with torch
 pandas>=1.3.0
