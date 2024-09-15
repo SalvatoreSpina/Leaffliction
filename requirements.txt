@@ -1,5 +1,5 @@
 # Basic Python Libraries
-wget>=3.2
+#wget>=3.2
 
 # Core numerical and scientific libraries
 numpy>=1.21.0            # Ensure compatibility with torch
@@ -11,7 +11,7 @@ torchvision>=0.11.0      # Should be aligned with the PyTorch version
 tensorflow>=2.6.0        # Ensure compatibility with other libraries
 
 # Data visualization and image processing
-matplotlib>=3.4.3
+matplotlib>=3.4.0        # Compatible with numpy>=1.21.0 
 pillow>=8.3.2
 
 # Linting and Code Style

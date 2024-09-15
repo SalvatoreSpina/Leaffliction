@@ -1,23 +1,13 @@
 #!/bin/bash
 
-# Step 1: Create the local library directory for Python packages
-mkdir -p ./local_lib/python3.8/site-packages
+# Step 1: Create a directory for the local packages
+mkdir -p ./local_python_packages
 
-# Step 2: Export the PYTHONPATH and set the PYTHONPYCACHEPREFIX to the local library
-export PYTHONPATH=$(pwd)/local_lib/python3.8/site-packages:$PYTHONPATH
-export PYTHONPYCACHEPREFIX=$(pwd)/local_lib/__pycache__
+# Step 2: Install the required package (e.g., numpy) in the local directory
+# Replace 'numpy' with the package you need to install
+pip install --target=./local_python_packages -r requirements.txt
 
-# Step 3: Install required Python packages to the local library directory
-pip install -r requirements.txt --target=$(pwd)/local_lib/python3.8/site-packages
-
-# Step 4: Add the local library directory to the PYTHONPATH and PYTHONPYCACHEPREFIX permanently
-echo 'export PYTHONPATH=$(pwd)/local_lib/python3.8/site-packages:$PYTHONPATH' >> ~/.zshrc
-echo 'export PYTHONPYCACHEPREFIX=$(pwd)/local_lib/__pycache__' >> ~/.zshrc
-
-# Step 5: Reload the shell configuration
-source ~/.zshrc
-
-# Alias for flake8
-alias norminette_python=flake8
-
-echo "Setup complete. The environment has been configured to use locally installed Python packages and cache redirected."
+# Step 3: Inform the user to add the local packages directory to their PYTHONPATH
+echo "The package has been installed in ./local_python_packages."
+echo "To use this package, add the following line to your shell configuration or run it manually:"
+echo "export PYTHONPATH=$(pwd)/local_python_packages:\$PYTHONPATH"
