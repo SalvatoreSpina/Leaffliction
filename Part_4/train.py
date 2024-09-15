@@ -58,8 +58,7 @@ def train_cnn_model(training_directory, batch_size=32, epochs=10):
     
     return model, train_data_generator
 
-def save_model_and_sample_images(trained_model, data_generator, model_name, output_directory='output', 
-                                 zip_filename='output.zip'):
+def save_model_and_sample_images(trained_model, model_name, output_directory='output'):
     """
     Save the trained model and some augmented images to an output directory and zip them.
     The model and images will be named based on the model type (Apple or Grape).
@@ -70,13 +69,7 @@ def save_model_and_sample_images(trained_model, data_generator, model_name, outp
     # Save the trained model with the model name (e.g., Apple_Model.h5 or Grape_Model.h5)
     model_path = os.path.join(output_directory, f'{model_name}.h5')
     trained_model.save(model_path)
-
-    # Zip the model and images
-    zip_path = os.path.join(output_directory, zip_filename)
-    with zipfile.ZipFile(zip_path, 'w') as zf:
-        zf.write(model_path)
-    
-    print(f"{model_name} saved to {zip_path}")
+    print(f"Model saved to {model_path}")
 
 if __name__ == '__main__':
     try:
