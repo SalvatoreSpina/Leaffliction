@@ -26,9 +26,13 @@ def build_cnn_model():
         MaxPooling2D(2, 2),
         Conv2D(64, (3, 3), activation='relu'),
         MaxPooling2D(2, 2),
+        Conv2D(128, (3, 3), activation='relu'),
+        MaxPooling2D(2, 2),
+        Conv2D(256, (3, 3), activation='relu'),
+        MaxPooling2D(2, 2),
         Flatten(),
         Dense(512, activation='relu'),
-        Dense(4, activation='softmax')  # Assuming 4 classes for disease classification
+        Dense(4, activation='softmax')  # Assuming 4 classes
     ])
     model.compile(optimizer=Adam(), loss='categorical_crossentropy', metrics=['accuracy'])
     return model
@@ -65,8 +69,12 @@ def save_model_and_sample_images(trained_model, model_name, output_directory='ou
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
     
+    print(f"Output directory: {output_directory}")
+    print(f"Model name: {model_name}")
+    
     # Save the trained model with the model name (e.g., Apple_Model.h5 or Grape_Model.h5)
     model_path = os.path.join(output_directory, f'{model_name}.h5')
+    print(f"Saving model to {model_path}")
     trained_model.save(model_path)
     print(f"Model saved to {model_path}")
 
@@ -80,7 +88,7 @@ if __name__ == '__main__':
         model_name = get_model_name_based_on_folder(args.training_directory)
 
         trained_model, data_generator = train_cnn_model(args.training_directory)
-        save_model_and_sample_images(trained_model, data_generator, model_name)
+        save_model_and_sample_images(trained_model, model_name)
 
     except Exception as e:
         print(f"An error occurred: {e}")
