@@ -17,6 +17,7 @@ SINGLE_IMAGE_DIR = "test_images"
 TARGET_DIR = "augmented_directory"
 VALIDATION_DIR = "validation"
 
+
 def clean_up(clean_all=False):
     """Remove existing 'dataset' directory and related files if they exist."""
     if os.path.exists(EXTRACT_DIR):
@@ -56,7 +57,8 @@ def download_and_extract_zip(url, zip_file, extract_dir):
 
 
 def pick_random_image(extract_dir):
-    """Pick a random image from the dataset/images folder and copy it to the SINGLE_IMAGE_DIR."""
+    """Pick a random image from the dataset/images folder
+    and copy it to the SINGLE_IMAGE_DIR."""
     # Check if the SINGLE_IMAGE_DIR directory exists, if so, remove it
     if os.path.exists(SINGLE_IMAGE_DIR):
         shutil.rmtree(SINGLE_IMAGE_DIR)
@@ -65,7 +67,8 @@ def pick_random_image(extract_dir):
     images_dir = os.path.join(extract_dir, 'images')
 
     if not os.path.exists(images_dir):
-        print(f"Directory {images_dir} does not exist. Ensure the dataset is extracted.")
+        print(f"Directory {images_dir} does not exist.\
+               Ensure the dataset is extracted.")
         sys.exit(1)
 
     subfolders = [f.path for f in os.scandir(images_dir) if f.is_dir()]
@@ -75,7 +78,8 @@ def pick_random_image(extract_dir):
         sys.exit(1)
 
     random_folder = random.choice(subfolders)
-    images = [f for f in os.listdir(random_folder) if os.path.isfile(os.path.join(random_folder, f))]
+    images = [f for f in os.listdir(random_folder)
+              if os.path.isfile(os.path.join(random_folder, f))]
 
     if not images:
         print(f"No images found in {random_folder}.")
@@ -101,7 +105,8 @@ def extract_number_from_image_name(image_name):
 
 
 def show_images(image_name, folders):
-    """Show all images that share the same digit inside the specified folders."""
+    """Show all images that share the same
+    digit inside the specified folders."""
     number = extract_number_from_image_name(image_name)
     if not number:
         print(f"No number found in the image name {image_name}.")
@@ -115,11 +120,13 @@ def show_images(image_name, folders):
             continue
 
         for file in os.listdir(folder_path):
-            if (file.endswith('.png') or file.endswith('.jpg')) and f'({number})' in file:
+            if (file.endswith('.png') or file.endswith('.jpg')) \
+                    and f'({number})' in file:
                 matching_images.append(os.path.join(folder_path, file))
 
     if not matching_images:
-        print(f"No images found with the number {number} in the specified folders.")
+        print(f"No images found with the number {number}\
+               in the specified folders.")
         sys.exit(1)
 
     # Show the input image alone and centered in the first line
@@ -152,10 +159,19 @@ def show_images(image_name, folders):
 
 def main():
     parser = argparse.ArgumentParser(description="Process dataset options.")
-    parser.add_argument('--clean', action='store_true', help="Clean the dataset directory.")
-    parser.add_argument('--clean_all', action='store_true', help="Clean all related files and directories.")
-    parser.add_argument('--single_image', action='store_true', help="Pick a random image and copy it to the SINGLE_IMAGE_DIR.")
-    parser.add_argument('--show', nargs='+', type=str, help="Show all images that share the same digit inside the specified folders. The first argument is the image name.")
+    parser.add_argument('--clean', action='store_true',
+                        help="Clean the dataset directory.")
+    parser.add_argument('--clean_all', action='store_true',
+                        help="Clean all related files and directories.")
+    parser.add_argument('--single_image', action='store_true',
+                        help="Pick a random image and copy it\
+                              to the SINGLE_IMAGE_DIR.")
+    parser.add_argument('--show',
+                        nargs='+',
+                        type=str,
+                        help="Show all images that share the same digit\
+                              inside the specified folders.\
+                              The first argument is the image name.")
 
     args = parser.parse_args()
 
