@@ -117,10 +117,10 @@ def classify_images_in_folder(folder_path, trained_model, class_labels):
 
     # Calculate and display overall accuracy
     overall_accuracy = total_correct / total_images if total_images > 0 else 0
-    print(f"Overall Accuracy: {overall_accuracy * 100:.2f}%")
+    print(f"\nOverall Accuracy: {overall_accuracy * 100:.2f}%")
 
     # Calculate and display accuracy by class
-    print("\nClass-wise Accuracy:")
+    print(f"Class-wise Accuracy ({total_correct} out of {total_images}):")
     class_accuracies = {}
     for class_name in class_labels:
         if class_total_count[class_name] > 0:

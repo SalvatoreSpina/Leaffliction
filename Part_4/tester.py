@@ -116,6 +116,13 @@ def execute_test_single_image(test_folder):
         subprocess.run(["python3", "predict.py", training_folder, image_path])
 
 
+def test_predict(test_type):
+    training_data = f"splitted/datasets/{test_type}/training/{test_type}"
+    validation_data = f"splitted/datasets/{test_type}/validation/{test_type}"
+    cmd = f"python3 predict.py {training_data} {validation_data} -batch"
+    subprocess.run(cmd, shell=True)
+
+
 def main(test_type):
     clean_up()
 
@@ -132,6 +139,10 @@ def main(test_type):
         download_and_extract_zip(UNIT_TEST_URL, ZIP_FILE,
                                  EXTRACTED_UNIT_TEST_DIR)
         rename_folders(EXTRACTED_UNIT_TEST_DIR)
+    elif test_type == "test_apples":
+        test_predict("Apples")
+    elif test_type == "test_grapes":
+        test_predict("Grapes")
     elif test_type == "test_1":
         print("Running test 1...")
         execute_test_single_image(TEST_1)
@@ -149,6 +160,7 @@ if __name__ == "__main__":
             description='Tester for the Distribution.py script')
         parser.add_argument('test_type',
                             choices=['notest',  'clean', 'dns',
+                                     "test_apples", "test_grapes",
                                      'unittest', "test_1", "test_2"],
                             help="Specify the type of test: 'dns'")
 
