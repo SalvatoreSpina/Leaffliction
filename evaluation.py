@@ -54,8 +54,8 @@ def main(zip_file):
     user_input = input("Are the signatures equal? (y/n): ").strip().lower()
 
     if user_input == 'y':
-        # Step 4: Unzip and copy to ./Part_4
-        destination_folder = './Part_4'
+        # Step 4: Unzip and copy to ./leaffliction/model
+        destination_folder = './leaffliction/model'
         unzip_and_copy(zip_file, destination_folder)
         print(f"Contents of {zip_file} unzipped \
               and copied to {destination_folder}.")
