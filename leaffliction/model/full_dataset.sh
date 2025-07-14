@@ -14,7 +14,7 @@ sh wrapper.sh
 
 # Step 4: Augment training data for Apples
 echo "Augmenting Apples training data..."
-python3 ../Part_2/Augmentation.py splitted/datasets/Apples/training -no_validation
+python3 ../augmentation/augmentation.py splitted/datasets/Apples/training -no_validation
 
 # Replace Apples training images with augmented ones
 echo "Replacing Apples training images with augmented images..."
@@ -23,7 +23,7 @@ mv augmented_directory/Apples splitted/datasets/Apples/training/
 
 # Step 5: Augment training data for Grapes
 echo "Augmenting Grapes training data..."
-python3 ../Part_2/Augmentation.py splitted/datasets/Grapes/training -no_validation
+python3 ../augmentation/augmentation.py splitted/datasets/Grapes/training -no_validation
 
 # Replace Grapes training images with augmented ones
 echo "Replacing Grapes training images with augmented images..."
@@ -39,7 +39,9 @@ python3 train.py splitted/datasets/Grapes/training/Grapes
 # # Step 7: Evaluate the model
 
 # echo "Evaluating the model on Apples..."
-# python3 predict.py splitted/datasets/Apples/training/Apples splitted/datasets/Apples/validation/Apples -batch
+# python3 predict.py splitted/datasets/Apples/training/Apples \
+#     splitted/datasets/Apples/validation/Apples -batch
 
 # echo "Evaluating the model on Grapes..."
-# python3 predict.py splitted/datasets/Grapes/training/Grapes/ splitted/datasets/Grapes/validation/Grapes -batch
+# python3 predict.py splitted/datasets/Grapes/training/Grapes \
+#     splitted/datasets/Grapes/validation/Grapes -batch
